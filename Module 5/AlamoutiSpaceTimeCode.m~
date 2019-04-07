@@ -1,28 +1,35 @@
-% Implementation of the Alamouti space Time code for 4 transmit antenna for real modulation.
-% Process:
-% Generate the signal, transmit it and recover it at the receiver.
-% 
-% Script for computing the BER for BPSK modulation in a
-% Rayleigh fading channel with Alamouti Space Time Block Coding
+% Script for an implementation of a Rayleigh fading channel with Alamouti Space Time Block Coding
+% for 4 transmit antenna real modulation.
+% BER for a BPSK modulated signal is computed.
 
-clear
+
+clc;
+close all;
+clear all;
+
 NumberofBits = 10^6; % number of bits or symbols
 
 Eb_N0_dB = [0:25]; % multiple Eb/N0 values
 
+bits = [0:Eb_N0_dB];
+
 for ii = 1:length(Eb_N0_dB)
     % Transmitter
-    ip = rand(1,NumberofBits)>0.5; % generating 0,1 with equal probability
-    s = 2*ip-1; % BPSK modulation 0 -> -1; 1 -> 0
+    ip = rand(1,NumberofBits) > 0.5 % generating 0,1 with equal probability
+    currentBit = 2*ip-1; % BPSK modulation 0 -> -1; 1 -> 0
+%     bits = [ii currentBit]
+    
     % Alamouti STBC 
     sCode = zeros(2,NumberofBits);
-    sCode(:,1:2:end) = (1/sqrt(2))*reshape(s,2,NumberofBits/2); % [x1 x2  ...]
-    sCode(:,2:2:end) = (1/sqrt(2))*(kron(ones(1,NumberofBits/2),[-1;1]).*flipud(reshape(conj(s),2,NumberofBits/2))); % [-x2* x1* ....]
-    h = 1/sqrt(2)*[randn(1,NumberofBits) + j*randn(1,NumberofBits)]; % Rayleigh channel
+    sCode(:,1:2:end) = (1/sqrt(2))*reshape(currentBit,2,NumberofBits/2); % [x1 x2  ...]
+    sCode(:,2:2:end) = (1/sqrt(2))*(kron(ones(1,NumberofBits/2),[-1;1]).*flipud(reshape(conj(currentBit),2,NumberofBits/2))); % [-x2* x1* ....]
+    h = 1/sqrt(2)*[randn(1,NumberofBits) + 1i*randn(1,NumberofBits)]; % Rayleigh channel
     hMod = kron(reshape(h,2,NumberofBits/2),ones(1,2)); % repeating the same channel for two symbols    
-    n = 1/sqrt(2)*[randn(1,NumberofBits) + j*randn(1,NumberofBits)]; % white gaussian noise, 0dB variance
+    n = 1/sqrt(2)*[randn(1,NumberofBits) + 1i*randn(1,NumberofBits)]; % white gaussian noise, 0dB variance
+    
     % Channel and noise Noise addition
     y = sum(hMod.*sCode,1) + 10^(-Eb_N0_dB(ii)/20)*n;
+    
     % Receiver
     yMod = kron(reshape(y,2,NumberofBits/2),ones(1,2)); % [y1 y1 ... ; y2 y2 ...]
     yMod(2,:) = conj(yMod(2,:)); % [y1 y1 ... ; y2* y2*...]
@@ -35,8 +42,10 @@ for ii = 1:length(Eb_N0_dB)
     hEqPower = sum(hEq.*conj(hEq),1);
     yHat = sum(hEq.*yMod,1)./hEqPower; % [h1*y1 + h2y2*, h2*y1 -h1y2*, ... ]
     yHat(2:2:end) = conj(yHat(2:2:end));
+    
     % receiver - hard decision decoding
     ipHat = real(yHat)>0;
+    
     % counting the errors
     nErr(ii) = size(find([ip- ipHat]),2);
 end
@@ -49,8 +58,14 @@ theoryBerMRC_nRx2 = p.^2.*(1+2*(1-p));
 pAlamouti = 1/2 - 1/2*(1+2./EbN0Lin).^(-1/2);
 theoryBerAlamouti_nTx2_nRx1 = pAlamouti.^2.*(1+2*(1-pAlamouti)); 
 
+figure(1)
+stem(bits, 'linewidth', 3);
+grid on;
+title('Information before Transmiting');
+axis([ 0 (length(bits) + 1) 0 1.5]);
+
 close all
-figure
+figure(2)
 semilogy(Eb_N0_dB,theoryBer_nRx1,'bp-','LineWidth',2);
 hold on
 semilogy(Eb_N0_dB,theoryBerMRC_nRx2,'kd-','LineWidth',2);
