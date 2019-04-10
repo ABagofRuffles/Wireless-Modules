@@ -23,7 +23,11 @@ while tot_err_ml<threshold                                        %Starting the 
             
             %Building the Rayleigh Channel
             
-            H=rey(2,2);
+            H = zeros(Nt,Nr);
+            r = eye(Nt*Nr);                                               %Correlation matrix. 
+            noi = randn(Nt*Nr,1)/sqrt(2)+1i*randn(Nt*Nr,1)/sqrt(2);          %Channel coefficients
+            H = reshape(r'*noi,Nt,Nr);
+            
             %H=ones(2,2);                                                   %If u want a AWGN channel, use this!
              
             sig = sqrt(0.5/(10^(snr/10)));                                  %Noise variance 
