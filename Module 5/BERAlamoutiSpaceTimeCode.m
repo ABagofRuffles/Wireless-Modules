@@ -15,17 +15,20 @@ Eb_N0_dB = [0:25]; % multiple Eb/N0 values
 for ii = 1:length(Eb_N0_dB)
     % Transmitter
     ip = rand(2,NumberofBits) > 0.5; % generating 0,1 with equal probability
-    s = 2*ip-1; % BPSK modulation 0 -> -1; 1 -> 0
+    currentBit = 2*ip-1; % BPSK modulation 0 -> -1; 1 -> 0
     
     % Alamouti STBC 
     sCode = zeros(4,NumberofBits);
-    sCode(:,1:2:end) = (1/sqrt(2))*reshape(s,4,NumberofBits/2); % [x1 x2  ...]
-    sCode(:,2:2:end) = (1/sqrt(2))*(kron(ones(2,NumberofBits/2),[-1;1]).*flipud(reshape(conj(s),4,NumberofBits/2))); % [-x2* x1* ....]
-    h = 1/sqrt(2)*[randn(2,NumberofBits) + j*randn(2,NumberofBits)]; % Rayleigh channel
+    sCode(:,1:2:end) = (1/sqrt(2))*reshape(currentBit,4,NumberofBits/2); % [x1 x2  ...]
+    sCode(:,2:2:end) = (1/sqrt(2))*(kron(ones(2,NumberofBits/2),[-1;1]).*flipud(reshape(conj(currentBit),4,NumberofBits/2))); % [-x2* x1* ....]
+    
+    h = 1/sqrt(2)*[randn(2,NumberofBits) + 1i*randn(2,NumberofBits)]; % Rayleigh channel
     hMod = kron(reshape(h,4,NumberofBits/2),ones(1,2)); % repeating the same channel for two symbols    
-    n = 1/sqrt(2)*[randn(4,NumberofBits) + j*randn(4,NumberofBits)]; % white gaussian noise, 0dB variance
+    n = 1/sqrt(2)*[randn(4,NumberofBits) + 1i*randn(4,NumberofBits)]; % white gaussian noise, 0dB variance
+    
     % Channel and noise Noise addition
     y = sum(hMod.*sCode,2) + 10^(-Eb_N0_dB(ii)/20)*n;
+   
     % Receiver
     yMod = kron(reshape(y,2,NumberofBits/2),ones(1,2)); % [y1 y1 ... ; y2 y2 ...]
     yMod(2,:) = conj(yMod(2,:)); % [y1 y1 ... ; y2* y2*...]
@@ -38,8 +41,10 @@ for ii = 1:length(Eb_N0_dB)
     hEqPower = sum(hEq.*conj(hEq),1);
     yHat = sum(hEq.*yMod,1)./hEqPower; % [h1*y1 + h2y2*, h2*y1 -h1y2*, ... ]
     yHat(2:2:end) = conj(yHat(2:2:end));
+    
     % receiver - hard decision decoding
-    ipHat = real(yHat)>0;
+    ipHat = real(yHat) > 0;
+    
     % counting the errors
     nErr(ii) = size(find([ip- ipHat]),2);
 end
