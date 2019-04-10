@@ -1,8 +1,3 @@
-% Script for an implementation of a Rayleigh fading channel with Alamouti Space Time Block Coding
-% for 4 transmit antenna real modulation.
-% BER for a BPSK modulated signal is computed.
-
-
 clc;
 close all;
 clear all;
@@ -23,20 +18,22 @@ for index = 1:length(Eb_N0_dB)
     sCode(:,2:2:end) = (1/sqrt(2))*(kron(ones(2,NumberofBits/2),[-1;1]).*flipud(reshape(conj(currentBit),4,NumberofBits/2))); % [-x2* x1* ....]
 
     rayleigh = 1/sqrt(2)*[randn(4,NumberofBits) + 1i*randn(4,NumberofBits)]; % Rayleigh channel
-    hMod = kron(reshape(rayleigh,4,NumberofBits/2),ones(1,4)); % repeating the same channel for two symbols
+    hMod = kron(reshape(rayleigh,4,NumberofBits),ones(1,1)); % repeating the same channel for two symbols
     whiteGNoise = 1/sqrt(2)*[randn(4,NumberofBits) + 1i*randn(4,NumberofBits)]; % white gaussian noise, 0dB variance
 
     % Channel and noise Noise addition
     signal = sum(hMod.*sCode,2) + 10^(-Eb_N0_dB(index)/20)*whiteGNoise;
 
     % Receiver
-    yMod = kron(reshape(signal,4,NumberofBits/2),ones(1,4)); % [y1 y1 ... ; y2 y2 ...]
+    yMod = kron(reshape(signal,4,NumberofBits),ones(1,1)); % [y1 y1 ... ; y2 y2 ...]
     yMod(2,:) = conj(yMod(2,:)); % [y1 y1 ... ; y2* y2*...]
 
     % forming the equalization matrix
     hEq = zeros(4,NumberofBits);
-    hEq(:,[1:2:end]) = reshape(rayleigh,4,NumberofBits/2); % [h1 0 ... ; h2 0...]
-    hEq(:,[2:2:end]) = kron(ones(2,NumberofBits/2),[1;-1]).*flipud(reshape(rayleigh,4,NumberofBits/2)); % [h1 h2 ... ; h2 -h1 ...]
+    hEq = reshape(rayleigh,4,NumberofBits); % [h1 0 ... ; h2 0...]
+    b = kron(ones(2,NumberofBits),[1;-1])
+    c = reshape(rayleigh,4,NumberofBits); % [h1 h2 ... ; h2 -h1 ...]
+    hEq = b.*c;
     hEq(1,:) = conj(hEq(1,:)); %  [h1* h2* ... ; h2 -h1 .... ]
     hEqPower = sum(hEq.*conj(hEq),1);
     yHat = sum(hEq.*yMod,1)./hEqPower; % [h1*y1 + h2y2*, h2*y1 -h1y2*, ... ]
