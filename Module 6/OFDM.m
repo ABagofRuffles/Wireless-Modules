@@ -87,16 +87,16 @@ end
 % theoreticalBER = berfading(EbNoVector,'psk',M,1);
 theoreticalBER = berawgn(EbNoVector,'psk',M,'nondiff');
 
-EbNo = (0:length(in_message_binary))';
-snrVector = EbNo + 10*log10(bitsPerSymbol) + 10*log10(numDC/numSubCarriers);
+EbNo = (0:length(dataIn))';
+snrVect = EbNo + 10*log10(bitsPerSymbol) + 10*log10(numDC/numSubCarriers);
 
 
-for index = length(in_message_binary)
+for index = length(dataIn)
     release(ofdmModulator)
-    SNR = snrVector(index);
+    SNR = snrVect(index);
     
-    qpskTx = qpskModulator(in_message_binary);    % Apply QPSK modulation
-    signalTx = ofdmModulator(txQPSK);             % Apply OFDM modulation
+    qpskTx = qpskModulator(dataIn);               % Apply QPSK modulation
+    signalTx = ofdmModulator(qpskTx);             % Apply OFDM modulation
         
     powerdB = 10*log10(var(txSignal));            % Calculate Tx signal power
     noiseVariance = 10.^(0.1*(powerdB-SNR));      % Calculate the noise variance
@@ -104,7 +104,7 @@ for index = length(in_message_binary)
     signalRx = channel(txSignal,noiseVariance);   % Pass the signal through a noisy channel
         
     qpskRx = ofdmDemodulator(rxSignal);           % Apply OFDM demodulation
-    out = qpskDemodulator(rxQPSK);            % Apply QPSK demodulation
+    out = qpskDemodulator(rxQPSK);                % Apply QPSK demodulation
 end
 
 
