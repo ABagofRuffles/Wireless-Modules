@@ -101,6 +101,10 @@ ylabel('Bit Error Rate')
 grid on
 hold off
 
+in_message_string = 'potato';
+in_message_binary = reshape((dec2bin(in_message_string) - 48),1,[])
+
+
 
 
 
