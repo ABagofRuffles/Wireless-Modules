@@ -14,6 +14,9 @@ maxNumBits = 1e7;                      % Maximum number of bits transmitted
 
 in_message_string = 'potato';
 in_message_binary = reshape((dec2bin(in_message_string) - 48).',[],1);
+zeroarray = zeros(192, 1);
+
+dataIn = [in_message_binary.' zeroarray.'].';
 
 % Set the QPSK modulator and demodulator so that they accept binary inputs.
 qpskModulator = comm.QPSKModulator('BitInput',true);
@@ -61,7 +64,7 @@ for m = 1:length(EbNoVector)
     SNR = snrVector(m);
     
     while errorStats(2) <= maxBitErrors && errorStats(3) <= maxNumBits
-        dataIn = randi([0,1],frameSize);              % Generate binary data
+        %dataIn = randi([0,1],frameSize);              % Generate binary data
         
         txQPSK = qpskModulator(dataIn);               % Apply QPSK modulation
         txSignal = ofdmModulator(txQPSK);             % Apply OFDM modulation
@@ -105,10 +108,10 @@ for index = length(in_message_binary)
 end
 
 
-out_message_binary = out;
+out_message_binary = out(1:42,1);
 
 
-out_message_string = char(bin2dec(char(reshape(out_message_binary,[],7).' + 48))).';
+out_message_string = char(bin2dec(char(reshape(out_message_binary,7,[]).' + 48))).';
 display(out_message_string);
 
 
@@ -124,7 +127,6 @@ xlabel('Eb/No (dB)')
 ylabel('Bit Error Rate')
 grid on
 hold off
-
 
 
 
