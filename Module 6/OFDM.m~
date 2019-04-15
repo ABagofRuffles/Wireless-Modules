@@ -32,53 +32,15 @@ ofdmDemodulator = comm.OFDMDemodulator('FFTLength',numSubCarriers,'CyclicPrefixL
 % to Variance and define the VarianceSource property 
 % so that the noise power can be set from an input port.
 
-channel = comm.AWGNChannel('NoiseMethod','Variance', ...
-    'VarianceSource','Input port');
+% channel = comm.AWGNChannel('NoiseMethod','Variance', ...
+%     'VarianceSource','Input port');
 
-fading = comm.RayleighChannel( ...
+channel = comm.RayleighChannel( ...
     'SampleRate',          sampleRate500kHz, ...
     'PathDelays',          delayVector, ...
     'AveragePathGains',    gainVector, ...
-    'NormalizePathGains',true, ...
     'MaximumDopplerShift', maxDopplerShift, ...
     'PathGainsOutputPort', true);
-
-% qpskmod = comm.QPSKModulator('BitInput',true);
-%     modData = qpskmod(randi([0 1],1000,1));   
-%     chan = comm.RayleighChannel(...
-%         'SampleRate',          1e3,...
-%         'NormalizePathGains',  true,...
-%         'MaximumDopplerShift', 10,...
-%         'RandomStream',        'mt19937ar with seed',...
-%         'Seed',                73,...
-%         'PathGainsOutputPort', true,...
-%         'FadingTechnique',     'Sum of sinusoids',...
-%         'InitialTimeSource',   'Property');
-%    
-%     % Filter an input signal through a channel. The fading process starts
-%     % at InitialTime = 0.
-%     [~,pathGains1] = chan(modData);
-%      
-%     % The input signal is converted into frames and each frame is
-%     % independently filtered through the same channel. The frames are
-%     % transmitted consecutively. The transmission time of successive
-%     % frames is controlled by the initialTime.
-%  
-%     release(chan);
-%     frameSpacing = 100;        % The spacing between frames in samples                    
-%     frameSize = 10;            % Frame size in samples
-%     pathGains2 = zeros(length(pathGains1),1);
-%     chan.InitialTimeSource = 'Input port';
-%     for i=1:(length(modData)/frameSpacing)
-%        inIdx = frameSpacing*(i-1) + (1:frameSize);
-%        initialTime = (inIdx(1)-1)* (1/chan.SampleRate);
-%        [~, pathGains2(inIdx,:)] = chan(modData(inIdx,:), initialTime);  
-%     end
-%     % Plot fading samples
-%     plot(abs(pathGains1),'o-b'); hold on;
-%     plot(abs(pathGains2),'*-r');  grid on; axis square;
-%     legend('InitialTimeSource : Property', 'InitialTimeSource : Input port');
-%     xlabel('Time (s)'); ylabel('|Output|');
 
 % Set the ResetInputPort property to true 
 % to enable the error rate calculator to be reset during the simulation.
@@ -119,7 +81,7 @@ for m = 1:length(EbNoVector)
         powerdB = 10*log10(var(txSignal));            % Calculate Tx signal power
         noiseVariance = 10.^(0.1*(powerdB-SNR));      % Calculate the noise variance
         
-        rxSignal = channel(txSignal,noiseVariance);                 % Pass the signal through a noisy channel
+        rxSignal = channel(txSignal);                 % Pass the signal through a noisy channel
         
         rxQPSK = ofdmDemodulator(rxSignal);           % Apply OFDM demodulation
         dataOut = qpskDemodulator(rxQPSK);            % Apply QPSK demodulation
@@ -131,9 +93,7 @@ for m = 1:length(EbNoVector)
     errorStats = errorRate(dataIn,dataOut,1);         % Reset the error rate calculator
 end
 
-% theoreticalBER = berfading(EbNoVector,'psk',M,1);
-theoreticalBER = berawgn(EbNoVector,'psk',M,'nondiff');
-
+theoreticalBER = berfading(EbNoVector,'psk',M,1);
 
 % Plot the data
 figure
