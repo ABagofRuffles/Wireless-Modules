@@ -12,13 +12,8 @@ cyclicPrefixLength = 32;               % OFDM cyclic prefix length
 maxBitErrors = 100;                    % Maximum number of bit errors
 maxNumBits = 1e7;                      % Maximum number of bits transmitted
 
-sampleRate500kHz = 500e3;              % Sample rate of 500K Hz
-maxDopplerShift  = 200;                % Maximum Doppler shift of diffuse components (Hz)
-delayVector = (0:5:15)*1e-6;           % Discrete delays of four-path channel (s)
-gainVector  = [0 -3 -6 -9];            % Average path gains (dB)
-KFactor = 10;                          % Linear ratio of specular power to diffuse power
-specDopplerShift = 100;                % Doppler shift of specular component (Hz)
-
+in_message_string = 'potato';
+in_message_binary = reshape((dec2bin(in_message_string) - 48).',[],1);
 
 % Set the QPSK modulator and demodulator so that they accept binary inputs.
 qpskModulator = comm.QPSKModulator('BitInput',true);
@@ -74,7 +69,7 @@ for m = 1:length(EbNoVector)
         powerdB = 10*log10(var(txSignal));            % Calculate Tx signal power
         noiseVariance = 10.^(0.1*(powerdB-SNR));      % Calculate the noise variance
         
-        rxSignal = channel(txSignal,noiseVariance);                 % Pass the signal through a noisy channel
+        rxSignal = channel(txSignal,noiseVariance);   % Pass the signal through a noisy channel
         
         rxQPSK = ofdmDemodulator(rxSignal);           % Apply OFDM demodulation
         dataOut = qpskDemodulator(rxQPSK);            % Apply QPSK demodulation
@@ -90,6 +85,21 @@ end
 theoreticalBER = berawgn(EbNoVector,'psk',M,'nondiff');
 
 
+for index = length(in_message_binary)
+    SNR = snrVector(index);
+    
+    txQPSK = qpskModulator(in_message_binary);    % Apply QPSK modulation
+    txSignal = ofdmModulator(txQPSK);             % Apply OFDM modulation
+        
+    powerdB = 10*log10(var(txSignal));            % Calculate Tx signal power
+    noiseVariance = 10.^(0.1*(powerdB-SNR));      % Calculate the noise variance
+        
+    rxSignal = channel(txSignal,noiseVariance);   % Pass the signal through a noisy channel
+        
+    rxQPSK = ofdmDemodulator(rxSignal);           % Apply OFDM demodulation
+    dataOut = qpskDemodulator(rxQPSK);            % Apply QPSK demodulation
+end
+
 % Plot the data
 figure
 semilogy(EbNoVector,berVector(:,1),'*')
@@ -100,7 +110,6 @@ xlabel('Eb/No (dB)')
 ylabel('Bit Error Rate')
 grid on
 hold off
-
 
 
 
