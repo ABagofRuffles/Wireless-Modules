@@ -8,7 +8,7 @@ clear all;
 M = 4;                                 % Modulation alphabet
 bitsPerSymbol = log2(M);               % Bits/symbol
 numSubCarriers = 128;                  % Number of OFDM subcarriers
-cyclicPrefixLength = 32;               % OFDM cyclic prefix length
+cyclicPrefixLength = 60;               % OFDM cyclic prefix length
 maxBitErrors = 100;                    % Maximum number of bit errors
 maxNumBits = 1e7;                      % Maximum number of bits transmitted
 
@@ -93,32 +93,28 @@ snrVect = EbNo + 10*log10(bitsPerSymbol) + 10*log10(numDC/numSubCarriers);
 
 for index = length(dataIn)
     release(ofdmModulator)
-    SNR = snrVect(index);
+    snr = snrVect(index);
     
     qpskTx = qpskModulator(dataIn);               % Apply QPSK modulation
     signalTx = ofdmModulator(qpskTx);             % Apply OFDM modulation
         
-    powerdB = 10*log10(var(txSignal));            % Calculate Tx signal power
-    noiseVariance = 10.^(0.1*(powerdB-SNR));      % Calculate the noise variance
+    power = 10*log10(var(signalTx));              % Calculate Tx signal power
+    noiseVar = 10.^(0.1*(power-snr));             % Calculate the noise variance
         
-    signalRx = channel(txSignal,noiseVariance);   % Pass the signal through a noisy channel
+    signalRx = channel(signalTx,noiseVar);        % Pass the signal through a noisy channel
         
-    qpskRx = ofdmDemodulator(rxSignal);           % Apply OFDM demodulation
-    out = qpskDemodulator(rxQPSK);                % Apply QPSK demodulation
+    qpskRx = ofdmDemodulator(signalRx);           % Apply OFDM demodulation
+    out = qpskDemodulator(qpskRx);                % Apply QPSK demodulation
 end
 
 
 out_message_binary = out(1:42,1);
 
-
 out_message_string = char(bin2dec(char(reshape(out_message_binary,7,[]).' + 48))).';
 display(out_message_string);
 
-
-
-
 % Plot the data
-figure(2)
+figure(1)
 semilogy(EbNoVector,berVector(:,1),'*')
 hold on
 semilogy(EbNoVector,theoreticalBER)
